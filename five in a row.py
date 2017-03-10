@@ -120,13 +120,13 @@ class Chessboard:  # 棋盘
         return 0  # 平了
 
 
-
 class TreeNode:  # 树的结点
     def __init__(self, chessboard: Chessboard=None):
         self.win_times = 0
         self.test_times = 0
         self.winning_percentage = 0
         self.chessboard = chessboard
+        self.piece = None  # 记录当前的结点是哪一步走过来的
         self.child_nodes = []
 
     def modify_result_node(self, breadth: int, depth: int, simulation_times: int, is_bot: bool):
@@ -140,17 +140,17 @@ class Tree:  # 树
         self.root = TreeNode()
         self.breadth = breadth
         self.depth = depth
-        self.create_tree(self.root, self.depth, bot_side, simulation_times, 0)
+        self.create_tree(self.root, self.depth, bot_side, simulation_times)
 
     # 建树可理解为扩展的过程 Expansion
-    def create_tree(self, root: TreeNode, depth: int, bot_side: int=2, simulation_times: int=1, recursion_degree: int=0):
-        if depth == 0:
-            new_root = TreeNode()
-            temp_chessboard = copy.deepcopy(root.chessboard)
-            win_side = temp_chessboard.simulation_to_end(bot_side)
-            new_root.win_times += 1 if bot_side == win_side else 0
-            new_root.test_times += 1 if win_side != 0 else 0
-            return new_root
+    def create_tree(self, root: TreeNode, depth: int, bot_side: int=2, simulation_times: int=1):
+        if depth == 0:  # 实现多次模拟
+            for i in range(simulation_times):
+                temp_chessboard = copy.deepcopy(root.chessboard)
+                win_side = temp_chessboard.simulation_to_end(bot_side)
+                root.win_times += 1 if bot_side == win_side else 0
+                root.test_times += 1 if win_side != 0 else 0
+            return root
 
         some_possible_next_blocks = root.chessboard.choose_some_next_step() # 扩展时可供bot选择的下一步棋的位置
         for i in range(min(self.breadth, len(root.chessboard.possible_next_blocks))):
@@ -161,6 +161,7 @@ class Tree:  # 树
             if temp_chessboard.is_win(bot_piece):
                 new_root = TreeNode()
                 new_root.modify_result_node(min(self.breadth, len(temp_chessboard.possible_next_blocks)), depth - 1, simulation_times, True)  # 当前depth - 1是当前结点的子结点的深度
+                new_root.piece = bot_piece
                 root.child_nodes.append(new_root)
                 continue
             player_next_step = temp_chessboard.choose_next_step()
@@ -169,11 +170,12 @@ class Tree:  # 树
             if temp_chessboard.is_win(player_piece):
                 new_root = TreeNode()
                 new_root.modify_result_node(min(self.breadth, len(temp_chessboard.possible_next_blocks)), depth - 1, simulation_times, False)
+                new_root.piece = bot_piece
                 root.child_nodes.append(new_root)
                 continue
             new_root = self.create_tree(TreeNode(temp_chessboard), depth - 1, bot_side, simulation_times)
-            if recursion_degree != 0:
-                new_root.chessboard = None  # 只保留第一层递归的chessboard，不保留其他的chessboard，节省内存
+            new_root.piece = bot_piece
+            new_root.chessboard = None  # 不保留chessboard，节省内存
             root.child_nodes.append(new_root)
         return root
 

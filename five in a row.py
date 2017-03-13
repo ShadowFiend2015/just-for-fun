@@ -1,4 +1,4 @@
-import random, copy
+import random, copy, re
 
 class Piece:  # 棋子
     def __init__(self, row, col, side):
@@ -8,14 +8,14 @@ class Piece:  # 棋子
 
 
 class Chessboard:  # 棋盘
-    def __init__(self, row_size: int=15, col_size: int=15):
+    def __init__(self, row_size: int=15, col_size: int=15, steps: int=0, board=None, possible_next_blocks: set=set()):
         self.row_size = row_size
         self.col_size = col_size
         self.total_size = row_size * col_size
-        self.steps = 0  # 已走步数
-        self.board = [[0 for y in range(col_size)] for x in range(row_size)]
+        self.steps = steps  # 已走步数
+        self.board = [[0 for y in range(col_size)] for x in range(row_size)] if board is None else board
         # self.exist_blocks = [(x, y) for x in range(row_size) for y in range(col_size)]
-        self.possible_next_blocks = set()  # 下一步可能走的格子，只选择已存在的点周围3*3格子内的点
+        self.possible_next_blocks = possible_next_blocks  # 下一步可能走的格子，只选择已存在的点周围3*3格子内的点
 
     def go_a_step(self, piece: Piece):
         if (piece.row < 0 or piece.row > self.row_size - 1 or piece.col < 0 or piece.col > self.col_size - 1 or self.board[piece.row][piece.col] != 0):
@@ -41,9 +41,9 @@ class Chessboard:  # 棋盘
         return random.choice(list(self.possible_next_blocks))
 
     # 专门用来扩展时选取几个可能的下一步用的
-    def choose_some_next_step(self):
+    def choose_some_next_step(self, count):
         # TODO 修改choose_next_step的同时也要修改这个函数
-        return random.sample(self.possible_next_blocks)
+        return random.sample(self.possible_next_blocks, count)
 
     def is_win(self, piece: Piece):
         count = 1  # count of column to 5 竖5
@@ -119,6 +119,13 @@ class Chessboard:  # 棋盘
             side = int(3 - side)
         return 0  # 平了
 
+    def print_board(self):
+        for i in range(self.row_size):
+            for j in range(self.col_size):
+                print(self.board[i][j], end=' ')
+            print()
+        print()
+
 
 class TreeNode:  # 树的结点
     def __init__(self, chessboard: Chessboard=None):
@@ -136,8 +143,8 @@ class TreeNode:  # 树的结点
 
 
 class Tree:  # 树
-    def __init__(self, breadth: int=10, depth: int=5, bot_side: int=2, simulation_times: int=1):
-        self.root = TreeNode()
+    def __init__(self, chessboard: Chessboard, breadth: int=7, depth: int=4, bot_side: int=2, simulation_times: int=1):
+        self.root = TreeNode(chessboard)
         self.breadth = breadth
         self.depth = depth
         self.create_tree(self.root, self.depth, bot_side, simulation_times)
@@ -146,15 +153,17 @@ class Tree:  # 树
     def create_tree(self, root: TreeNode, depth: int, bot_side: int=2, simulation_times: int=1):
         if depth == 0:  # 实现多次模拟
             for i in range(simulation_times):
-                temp_chessboard = copy.deepcopy(root.chessboard)
+                temp_chessboard = Chessboard(steps=root.chessboard.steps, board=[[x for x in y] for y in root.chessboard.board], possible_next_blocks=root.chessboard.possible_next_blocks.copy())
                 win_side = temp_chessboard.simulation_to_end(bot_side)
                 root.win_times += 1 if bot_side == win_side else 0
                 root.test_times += 1 if win_side != 0 else 0
             return root
 
-        some_possible_next_blocks = root.chessboard.choose_some_next_step() # 扩展时可供bot选择的下一步棋的位置
+        some_possible_next_blocks = root.chessboard.choose_some_next_step(min(self.breadth, len(root.chessboard.possible_next_blocks))) # 扩展时可供bot选择的下一步棋的位置
         for i in range(min(self.breadth, len(root.chessboard.possible_next_blocks))):
-            temp_chessboard = copy.deepcopy(root.chessboard)
+            temp_chessboard = Chessboard(steps=root.chessboard.steps,
+                                         board=[[x for x in y] for y in root.chessboard.board],
+                                         possible_next_blocks=root.chessboard.possible_next_blocks.copy())
             next_step = some_possible_next_blocks[i]  # 选择下一步棋的位置
             bot_piece = Piece(next_step[0], next_step[1], bot_side)
             temp_chessboard.go_a_step(bot_piece)
@@ -179,6 +188,30 @@ class Tree:  # 树
             root.child_nodes.append(new_root)
         return root
 
+    # 反馈过程 Back-Propagation
+    def back_propagation(self, root: TreeNode):
+        if root is None:
+            return 0, 0
+        for child_node in root.child_nodes:
+            child_win_times, child_test_times = self.back_propagation(child_node)
+            root.win_times += child_win_times
+            root.test_times += child_test_times
+        return root.win_times, root.test_times
+
+    # 选择过程 Selection
+    def selection(self):
+        # 对于更复杂的情况，以后可能要多次选择
+        # TODO
+        selected_node = None
+        max_winning_percentage = -1
+        for child_node in self.root.child_nodes:
+            child_node.winning_percentage = child_node.win_times / child_node.test_times
+            if child_node.winning_percentage > max_winning_percentage:
+                selected_node = child_node
+                max_winning_percentage = child_node.winning_percentage
+        return selected_node
+
+    # 后序遍历，测试用
     def post_order_traversal(self, root: TreeNode):
         global total
         if root is None:
@@ -194,6 +227,59 @@ total = 0
 
 def main():
     chessboard = Chessboard()
+    player_side = 0
+    bot_side = 0
+    while(1):  # 输入选择先手后手
+        try:
+            player_side = int(input('Choose your side. 1 means offensive position， 2 means defensive position\n'))
+        except ValueError as e:
+            print('Input a integer please!')
+        else:
+            if player_side != 1 and player_side != 2:
+                print('Input 1 or 2 please!')
+            else:
+                bot_side = int(3 - player_side)
+                break
+    if player_side == 2:
+        chessboard.go_a_step(Piece(7, 7, 1))
+    while(1):  # 下棋过程
+        while(1):  # 输入下棋位置
+            player_input = input()
+            match_group = re.match('^.*(\d+)[\s,;.]+(\d+).*$', player_input)  # 用正则表达式匹配的方法使输入可读的概率更高
+            try:
+                player_step = (int(match_group.group(1)), int(match_group.group(2)))
+            except AttributeError as e:
+                print('Illegal input!')
+            else:
+                player_piece = Piece(player_step[0] - 1, player_step[1] - 1, player_side)  # 数组从0开始，玩家输入习惯从1开始
+                go_a_step_success = chessboard.go_a_step(player_piece)
+                if go_a_step_success is True:
+                    break
+        chessboard.print_board()
+        if chessboard.is_win(player_piece) is True:
+            print('You Win!')
+            break
+        if chessboard.steps == chessboard.total_size:
+            print('Tie!')
+            break
+        mcts_tree = Tree(chessboard=chessboard)
+        mcts_tree.back_propagation(mcts_tree.root)
+        selected_node = mcts_tree.selection()
+        if selected_node is None:
+            print('Error!')
+            return
+        bot_piece = selected_node.piece
+        if bot_piece is None:
+            print('Error2!')
+            return
+        chessboard.go_a_step(bot_piece)
+        chessboard.print_board()
+        if chessboard.is_win(bot_piece) is True:
+            print('You Lose!')
+            break
+        if chessboard.steps == chessboard.total_size:
+            print('Tie!')
+            break
 
-    # after you've gone a step
-    # TODO
+
+main()

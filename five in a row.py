@@ -1,5 +1,16 @@
 import random, copy, re
 
+
+# 五子棋评分表
+# 第一排为没有棋子的得分
+# 第二排为1~4个自己棋子的得分
+# 第三排为1~4个对方棋子的得分
+# 第四排为黑白都有情况的得分
+score_table = (7,
+               35, 800, 15000, 800000,
+               15, 400, 1800, 100000,
+               0, 0)
+
 class Piece:  # 棋子
     def __init__(self, row, col, side):
         self.row = row
@@ -35,15 +46,55 @@ class Chessboard:  # 棋盘
                         self.possible_next_blocks.add((position_row, position_col))
             return True
 
-    def choose_next_step(self):
-        # 现在采用在possible_next_blocks中的随机找一个的算法，有待提高
-        # TODO 使用更好的五子棋评分方法
-        return random.choice(list(self.possible_next_blocks))
+    def choose_next_step(self, side):
+        # 使用五子棋评分算法
+        possible_blocks_score = self.evaluate_score(side)
+        return [(possible_blocks_score[0][0], possible_blocks_score[0][1])]
+        # 采用在possible_next_blocks中的随机找一个的算法
+        # return random.choice(list(self.possible_next_blocks))
 
     # 专门用来扩展时选取几个可能的下一步用的
-    def choose_some_next_step(self, count):
-        # TODO 修改choose_next_step的同时也要修改这个函数
-        return random.sample(self.possible_next_blocks, count)
+    def choose_some_next_step(self, count, side):
+        # 使用五子棋评分算法
+        possible_blocks_score = self.evaluate_score(side)
+        return [(possible_blocks_score[i][0], possible_blocks_score[i][1]) for i in range(count)]
+        # 不再采用随机生成的方法
+        # return random.sample(self.possible_next_blocks, count)
+
+    # 用五子棋评分表算法算出当前可能最好的下棋位置
+    def evaluate_score(self, side):
+        possible_blocks_score = []
+        for block in self.possible_next_blocks:
+            block_row = block[0]
+            block_col = block[1]
+            current_score = 0
+            for offset in range(5):
+                row_piece_count = 0  # 计算黑白子的个数。同side + 10， 非同side + 1， 空 + 0。
+                col_piece_count = 0  # 竖着的
+                left_top_piece_count = 0  # 左上-右下
+                right_top_piece_count = 0  # 右上-左下
+                for i in range(5):
+                    temp_row = block_row - offset + i
+                    temp_col = block_col - offset + i
+                    temp_col2 = block_col + offset - i
+                    row_piece_count += 0 if (temp_col < 0 or temp_col > self.col_size - 1 or self.board[block_row][temp_col] == 0) else 10 if self.board[block_row][temp_col] == side else 1
+                    col_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or self.board[temp_row][block_col] == 0) else 10 if self.board[temp_row][block_col] == side else 1
+                    left_top_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or temp_col < 0 or temp_col > self.col_size - 1) else 10 if self.board[temp_row][temp_col] == side else 1
+                    right_top_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or temp_col2 < 0 or temp_col2 > self.col_size - 1) else 10 if self.board[temp_row][temp_col2] == side else 1
+                row_score_index = 9 if (row_piece_count % 10 != 0 and row_piece_count // 10 != 0) else row_piece_count + 4 if row_piece_count % 10 != 0 else row_piece_count // 10
+                current_score += score_table[row_score_index]
+                col_score_index = 9 if (col_piece_count % 10 != 0 and col_piece_count // 10 != 0) else col_piece_count + 4 if col_piece_count % 10 != 0 else col_piece_count // 10
+                current_score += score_table[col_score_index]
+                left_top_score_index = 9 if (left_top_piece_count % 10 != 0 and left_top_piece_count // 10 != 0) else left_top_piece_count + 4 if left_top_piece_count % 10 != 0 else left_top_piece_count // 10
+                current_score += score_table[left_top_score_index]
+                right_top_score_index = 9 if (right_top_piece_count % 10 != 0 and right_top_piece_count // 10 != 0) else right_top_piece_count + 4 if right_top_piece_count % 10 != 0 else right_top_piece_count // 10
+                current_score += score_table[right_top_score_index]
+            possible_blocks_score.append((block_row, block_col, current_score))
+        possible_blocks_score.sort(key=lambda x: x[2], reverse=True)
+        return possible_blocks_score
+
+
+
 
     def is_win(self, piece: Piece):
         count = 1  # count of column to 5 竖5
@@ -111,7 +162,7 @@ class Chessboard:  # 棋盘
     # 模拟 simulation
     def simulation_to_end(self, side):
         while self.steps < self.total_size:
-            next_step = self.choose_next_step()
+            next_step = self.choose_next_step(side)
             current_piece = Piece(next_step[0], next_step[1], side)
             self.go_a_step(current_piece)
             if self.is_win(current_piece):
@@ -159,7 +210,7 @@ class Tree:  # 树
                 root.test_times += 1 if win_side != 0 else 0
             return root
 
-        some_possible_next_blocks = root.chessboard.choose_some_next_step(min(self.breadth, len(root.chessboard.possible_next_blocks))) # 扩展时可供bot选择的下一步棋的位置
+        some_possible_next_blocks = root.chessboard.choose_some_next_step(min(self.breadth, len(root.chessboard.possible_next_blocks)), bot_side) # 扩展时可供bot选择的下一步棋的位置
         for i in range(min(self.breadth, len(root.chessboard.possible_next_blocks))):
             temp_chessboard = Chessboard(steps=root.chessboard.steps,
                                          board=[[x for x in y] for y in root.chessboard.board],
@@ -173,7 +224,7 @@ class Tree:  # 树
                 new_root.piece = bot_piece
                 root.child_nodes.append(new_root)
                 continue
-            player_next_step = temp_chessboard.choose_next_step()
+            player_next_step = temp_chessboard.choose_next_step(int(3 - bot_side))
             player_piece = Piece(player_next_step[0], player_next_step[1], int(3 - bot_side))
             temp_chessboard.go_a_step(player_piece)  # side只分为1, 2因此非bot就是3 - bot_side
             if temp_chessboard.is_win(player_piece):
@@ -260,7 +311,7 @@ def main():
             print('You Win!')
             break
         if chessboard.steps == chessboard.total_size:
-            print('Tie!')
+            print('Draw!')
             break
         mcts_tree = Tree(chessboard=chessboard)
         mcts_tree.back_propagation(mcts_tree.root)

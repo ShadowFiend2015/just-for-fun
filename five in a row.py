@@ -298,6 +298,8 @@ def main():
                 break
     if player_side == 2:
         chessboard.go_a_step(Piece(7, 7, 1))
+        print('bot_step:', 8, 8)
+        chessboard.print_board()
     while 1:  # 下棋过程
         while 1:  # 输入下棋位置
             player_input = input()
@@ -318,7 +320,7 @@ def main():
         if chessboard.steps == chessboard.total_size:
             print('Draw!')
             break
-        mcts_tree = Tree(chessboard=chessboard)
+        mcts_tree = Tree(chessboard=chessboard, bot_side=bot_side)
         mcts_tree.back_propagation(mcts_tree.root)
         selected_node = mcts_tree.selection()
         if selected_node is None:
@@ -329,6 +331,7 @@ def main():
             print('Error2!')
             return
         chessboard.go_a_step(bot_piece)
+        print('bot_step:', bot_piece.row + 1, bot_piece.col + 1)
         chessboard.print_board()
         if chessboard.is_win(bot_piece) is True:
             print('You Lose!')

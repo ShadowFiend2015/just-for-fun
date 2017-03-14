@@ -49,7 +49,7 @@ class Chessboard:  # 棋盘
     def choose_next_step(self, side):
         # 使用五子棋评分算法
         possible_blocks_score = self.evaluate_score(side)
-        return [(possible_blocks_score[0][0], possible_blocks_score[0][1])]
+        return (possible_blocks_score[0][0], possible_blocks_score[0][1])
         # 采用在possible_next_blocks中的随机找一个的算法
         # return random.choice(list(self.possible_next_blocks))
 
@@ -79,8 +79,8 @@ class Chessboard:  # 棋盘
                     temp_col2 = block_col + offset - i
                     row_piece_count += 0 if (temp_col < 0 or temp_col > self.col_size - 1 or self.board[block_row][temp_col] == 0) else 10 if self.board[block_row][temp_col] == side else 1
                     col_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or self.board[temp_row][block_col] == 0) else 10 if self.board[temp_row][block_col] == side else 1
-                    left_top_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or temp_col < 0 or temp_col > self.col_size - 1) else 10 if self.board[temp_row][temp_col] == side else 1
-                    right_top_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or temp_col2 < 0 or temp_col2 > self.col_size - 1) else 10 if self.board[temp_row][temp_col2] == side else 1
+                    left_top_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or temp_col < 0 or temp_col > self.col_size - 1 or self.board[temp_row][temp_col] == 0) else 10 if self.board[temp_row][temp_col] == side else 1
+                    right_top_piece_count += 0 if (temp_row < 0 or temp_row > self.row_size - 1 or temp_col2 < 0 or temp_col2 > self.col_size - 1 or self.board[temp_row][temp_col2] == 0) else 10 if self.board[temp_row][temp_col2] == side else 1
                 row_score_index = 9 if (row_piece_count % 10 != 0 and row_piece_count // 10 != 0) else row_piece_count + 4 if row_piece_count % 10 != 0 else row_piece_count // 10
                 current_score += score_table[row_score_index]
                 col_score_index = 9 if (col_piece_count % 10 != 0 and col_piece_count // 10 != 0) else col_piece_count + 4 if col_piece_count % 10 != 0 else col_piece_count // 10
@@ -171,9 +171,14 @@ class Chessboard:  # 棋盘
         return 0  # 平了
 
     def print_board(self):
+        print(end='   ')
+        for i in range(self.col_size):
+            print(i + 1, end=' ' if i + 1 < 10 else '')
+        print()
         for i in range(self.row_size):
+            print(i + 1, end='  ' if i + 1 < 10 else ' ')
             for j in range(self.col_size):
-                print(self.board[i][j], end=' ')
+                print('.' if self.board[i][j] == 0 else 'X' if self.board[i][j] == 1 else 'O', end=' ')
             print()
         print()
 
@@ -194,7 +199,7 @@ class TreeNode:  # 树的结点
 
 
 class Tree:  # 树
-    def __init__(self, chessboard: Chessboard, breadth: int=7, depth: int=4, bot_side: int=2, simulation_times: int=1):
+    def __init__(self, chessboard: Chessboard, breadth: int=6, depth: int=3, bot_side: int=2, simulation_times: int=1):
         self.root = TreeNode(chessboard)
         self.breadth = breadth
         self.depth = depth
@@ -293,10 +298,10 @@ def main():
                 break
     if player_side == 2:
         chessboard.go_a_step(Piece(7, 7, 1))
-    while(1):  # 下棋过程
-        while(1):  # 输入下棋位置
+    while 1:  # 下棋过程
+        while 1:  # 输入下棋位置
             player_input = input()
-            match_group = re.match('^.*(\d+)[\s,;.]+(\d+).*$', player_input)  # 用正则表达式匹配的方法使输入可读的概率更高
+            match_group = re.match('^(\d+)[\s,;.]+(\d+).*$', player_input)  # 用正则表达式匹配的方法使输入可读的概率更高
             try:
                 player_step = (int(match_group.group(1)), int(match_group.group(2)))
             except AttributeError as e:
@@ -329,7 +334,7 @@ def main():
             print('You Lose!')
             break
         if chessboard.steps == chessboard.total_size:
-            print('Tie!')
+            print('Draw!')
             break
 
 

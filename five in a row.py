@@ -2,6 +2,7 @@ import random, copy, re
 
 
 # 五子棋评分表
+# 参照：http://blog.csdn.net/chaiwenjun000/article/details/50751792
 # 第一排为没有棋子的得分
 # 第二排为1~4个自己棋子的得分
 # 第三排为1~4个对方棋子的得分
@@ -296,6 +297,8 @@ def main():
             else:
                 bot_side = int(3 - player_side)
                 break
+    if player_side == 1:
+        print('Please input your step, format like:1 2')
     if player_side == 2:
         chessboard.go_a_step(Piece(7, 7, 1))
         print('bot_step:', 8, 8)
@@ -320,6 +323,7 @@ def main():
         if chessboard.steps == chessboard.total_size:
             print('Draw!')
             break
+        print('the bot is considering...')
         mcts_tree = Tree(chessboard=chessboard, bot_side=bot_side)
         mcts_tree.back_propagation(mcts_tree.root)
         selected_node = mcts_tree.selection()

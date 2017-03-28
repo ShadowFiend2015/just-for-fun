@@ -1,5 +1,6 @@
 import random
 
+
 # TODO 开放的穴位接口类，便于以后修改
 class Acupoint:
     def __init__(self, name: str=None, score: float=0):
@@ -76,12 +77,11 @@ class Tree:  # 树
                 root.test_times += 1
             return root
 
-        some_possible_next_blocks = root.chessboard.choose_some_next_step(min(self.breadth, len(root.chessboard.possible_next_blocks)), bot_side) # 扩展时可供bot选择的下一步棋的位置
-        for i in range(min(self.breadth, len(root.chessboard.possible_next_blocks))):
-            temp_chessboard = Chessboard(steps=root.chessboard.steps,
-                                         board=[[x for x in y] for y in root.chessboard.board],
-                                         possible_next_blocks=root.chessboard.possible_next_blocks.copy())
-            next_step = some_possible_next_blocks[i]  # 选择下一步棋的位置
+        some_possible_next_points = root.body.choose_some_points(min(self.breadth, len(root.body.points))) # 扩展时可供针灸选择的下一个穴位的位置
+        for i in range(min(self.breadth, len(root.body.points))):
+            temp_body = Body(points=root.body.points, size=root.body.size, choose_size=root.body.choose_size,
+                             selected_size=root.body.selected_size, selected_point=root.body.selected_point)
+            next_point = some_possible_next_points[i]  # 选择下一上穴位的位置
             bot_piece = Piece(next_step[0], next_step[1], bot_side)
             temp_chessboard.go_a_step(bot_piece)
             if temp_chessboard.is_win(bot_piece):

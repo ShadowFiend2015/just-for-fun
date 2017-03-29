@@ -1,4 +1,4 @@
-import random, re
+﻿import random, re
 
 
 # TODO 开放的穴位接口类，便于以后修改
@@ -15,7 +15,7 @@ class Body:
         self.choose_size = choose_size  # 需要选择的总数
         self.selected_size = selected_size
         self.selected_point = selected_point  # 被选择的穴位(有先后顺序的)
-        if len(self.points)  == 0:
+        if bool(self.points) is False:
             self.init_point()
 
     # 可能会根据穴位的要求有所修改
@@ -74,7 +74,7 @@ class Tree:  # 树
         self.create_tree(self.root, self.depth, simulation_times)
 
     # 建树可理解为扩展的过程 Expansion
-    def create_tree(self, root: TreeNode, depth: int, simulation_times: int=1, judge_score: float=100):   # judge_score: 判定分数，低于这个分数则直接放弃。以后可能会有修改
+    def create_tree(self, root: TreeNode, depth: int, simulation_times: int=1, judge_score: float=1):   # judge_score: 判定分数，低于这个分数则直接放弃。以后可能会有修改
         if depth == 0:  # 实现多次模拟
             for i in range(simulation_times):
                 temp_body = Body(points=root.body.points, size=root.body.size, choose_size=root.body.choose_size, selected_size=root.body.selected_size, selected_point=root.body.selected_point)
@@ -85,8 +85,8 @@ class Tree:  # 树
 
         some_possible_next_points = root.body.choose_some_points(min(self.breadth, len(root.body.points))) # 扩展时可供针灸选择的下一个穴位的位置
         for i in range(min(self.breadth, len(root.body.points))):
-            temp_body = Body(points=root.body.points, size=root.body.size, choose_size=root.body.choose_size,
-                             selected_size=root.body.selected_size, selected_point=root.body.selected_point)
+            temp_body = Body(points=root.body.points.copy(), size=root.body.size, choose_size=root.body.choose_size,
+                             selected_size=root.body.selected_size, selected_point=root.body.selected_point.copy())
             next_point = some_possible_next_points[i]  # 选择下一上穴位的位置
             temp_body.go_a_step(next_point)
             current_score = temp_body.evaluate_score()
@@ -121,7 +121,7 @@ class Tree:  # 树
         max_average_score = 0
         for child_node in self.root.child_nodes:
             child_node.average_score = child_node.sum_score / child_node.test_times
-            if child_node.winning_percentage > max_average_score:
+            if child_node.average_score > max_average_score:
                 selected_node = child_node
                 max_average_score = child_node.average_score
         return selected_node
@@ -131,16 +131,15 @@ class Tree:  # 树
         global total
         if root is None:
             return
-        total += 1
         for child_node in root.child_nodes:
             self.post_order_traversal(child_node)
+        total += 1
         print(root.sum_score, total)
 
 
 total = 0
 
 def main():
-    body = Body()
     acupoint_size = 0
     choose_size = 0
     while 1:  # 输入总穴位数和需要的穴位数
@@ -157,6 +156,7 @@ def main():
                 print('the first number can not be little than the second number!')
                 continue
             break
+    body = Body(size=acupoint_size, choose_size=choose_size)
     for i in range(choose_size):
         mcts_tree = Tree(body)
         mcts_tree.back_propagation(mcts_tree.root)
@@ -173,4 +173,3 @@ def main():
 
 
 main()
-

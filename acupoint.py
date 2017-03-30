@@ -77,7 +77,7 @@ class Tree:  # 树
     def create_tree(self, root: TreeNode, depth: int, simulation_times: int=1, judge_score: float=1):   # judge_score: 判定分数，低于这个分数则直接放弃。以后可能会有修改
         if depth == 0:  # 实现多次模拟
             for i in range(simulation_times):
-                temp_body = Body(points=root.body.points, size=root.body.size, choose_size=root.body.choose_size, selected_size=root.body.selected_size, selected_point=root.body.selected_point)
+                temp_body = Body(points=root.body.points.copy(), size=root.body.size, choose_size=root.body.choose_size, selected_size=root.body.selected_size, selected_point=root.body.selected_point.copy())
                 final_score = temp_body.simulation_to_finish()
                 root.sum_score += final_score
                 root.test_times += 1
@@ -169,7 +169,7 @@ def main():
             print('Error2!')
             return
         body.go_a_step(next_point)
-    print(body.selected_point)
+    print([point.name for point in list(body.selected_point)])
 
 
 main()

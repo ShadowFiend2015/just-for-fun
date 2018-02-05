@@ -215,7 +215,8 @@ def main():
                 print('the first number can not be little than the second number!')
                 continue
             break
-    body = Body(size=acupoint_size, choose_size=choose_size)
+    # 当函数中有默认参数(list, set等有内存大小的类型)，对于默认参数的修改(eg: list.append())，将会永久修改传入的默认参数。解决办法：每次传入新的参数。
+    body = Body(points=set(), size=acupoint_size, choose_size=choose_size, selected_point=list(), score_table=list())
     for i in range(choose_size):
         mcts_tree = Tree(body)
         mcts_tree.back_propagation(mcts_tree.root)

@@ -1,0 +1,6 @@
+# vad
+frame_size = 20
+sample_rate = 16000
+vad_prob_start = 99
+vad_prob_continue = 99
+delay = 10

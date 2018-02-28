@@ -22,6 +22,7 @@ type Options struct {
 	PCMLength       int `toml:"pcm_length"`
 	WavPath         string
 	Delay           int `toml:"delay"`
+	CutTail         int `toml:"cut_tail"`
 }
 
 func NewOptions() *Options {
@@ -102,11 +103,17 @@ func splitWav() {
 
 	cur := 0
 	end := false
+	var head []byte
+	tail := opts.CutTail * 16 * 2
 	for i := 1; ; i++ {
 		b := make([]byte, opts.FrameSize*opts.SampleRate/1000*2)
 		// outpath := opts.WavPath[:len(opts.WavPath)-4] + "-" + strconv.Itoa(i) + ".pcm"
 		outpath := fmt.Sprintf("%s/%s.pcm", opts.WavPath[:len(opts.WavPath)-4]+"-"+strconv.Itoa(opts.VadProbStart)+"_"+strconv.Itoa(opts.VadProbContinue), strconv.Itoa(i))
 		var pcm []byte
+		if len(head) != 0 {
+			pcm = append(pcm, head...)
+			head = []byte{}
+		}
 		countVAD := 0
 		for j := 1; ; j++ {
 			cur++
@@ -128,13 +135,15 @@ func splitWav() {
 				break
 			}
 			flag := VadMonitor(state, b)
-			log.Printf("cur: %03d	countVAD: %02d	flag: %d\n", cur/50, countVAD, flag)
+			// log.Printf("cur: %03d	countVAD: %02d	flag: %d\n", cur/50, countVAD, flag)
 			if flag == 0 {
 				countVAD += 1
 				continue
 			} else {
 				if countVAD*opts.FrameSize > opts.MuteLength && j*opts.FrameSize > opts.PCMLength {
-					log.Printf("here!!!")
+					head = pcm[len(pcm)-tail:]
+					pcm = pcm[:len(pcm)-tail]
+					// log.Printf("cut here and save pcm!!!")
 					break
 				} else {
 					countVAD = 0

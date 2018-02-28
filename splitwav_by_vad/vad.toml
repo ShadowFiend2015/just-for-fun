@@ -6,3 +6,4 @@ vad_prob_continue = 99
 delay = 10
 mute_length = 1000
 pcm_length = 5000
+cut_tail = 200

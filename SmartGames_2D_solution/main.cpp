@@ -99,7 +99,9 @@ void printBoard(vector<vector<int> > board)
     }
 }
 
-Point rotateAndReversePoint()
+Point rotateAndReversePoint(Point target, Point base, int type)
+{
+}
 
 Model rotateAndReverseModel(Model m, int type, int point_pos)
 {

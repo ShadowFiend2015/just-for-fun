@@ -22,6 +22,8 @@ int models_array[12][5][2] =
     {{0, 0}, {0, 1}, {0, 2}, {1, 0}},
     {{0, 0}, {0, 1}, {1, 0}}
 };
+string types[8] = {"0&no_reverse", "90&no_reverse", "180&no_reverse", "270&no_reverse",
+                   "0&reverse",    "90&reverse",    "180&reverse",    "270&reverse"}
 
 struct Point
 {
@@ -31,6 +33,7 @@ struct Point
 
 struct Model
 {
+    int pos;    // 在数组中的位置，也就是编号
     vector<Point> points;
 };
 
@@ -56,7 +59,7 @@ vector<Model> initModels()
             Point p = {models_array[i][j][0], models_array[i][j][1]};
             points.push_back(p);
         }
-        Model m = {points};
+        Model m = {i, points};
         models.push_back(m);
     }
     for (int i = 8; i < 11; i++)
@@ -67,7 +70,7 @@ vector<Model> initModels()
             Point p = {models_array[i][j][0], models_array[i][j][1]};
             points.push_back(p);
         }
-        Model m = {points};
+        Model m = {i, points};
         models.push_back(m);
     }
     for (int i = 11; i < 12; i++)
@@ -78,7 +81,7 @@ vector<Model> initModels()
             Point p = {models_array[i][j][0], models_array[i][j][1]};
             points.push_back(p);
         }
-        Model m = {points};
+        Model m = {i, points};
         models.push_back(m);
     }
     return models;
@@ -94,6 +97,14 @@ void printBoard(vector<vector<int> > board)
         }
         cout << endl;
     }
+}
+
+Point rotateAndReversePoint()
+
+Model rotateAndReverseModel(Model m, int type, int point_pos)
+{
+    Point p = m.points[point_pos];
+
 }
 
 int main()

@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include<set>
 
 using namespace std;
 
@@ -23,7 +24,8 @@ int models_array[12][5][2] =
     {{0, 0}, {0, 1}, {1, 0}}
 };
 string types[8] = {"0&no_reverse", "90&no_reverse", "180&no_reverse", "270&no_reverse",
-                   "0&reverse",    "90&reverse",    "180&reverse",    "270&reverse"};
+                   "0&reverse",    "90&reverse",    "180&reverse",    "270&reverse"
+                  };
 
 struct Point
 {
@@ -99,28 +101,78 @@ void printBoard(vector<vector<int> > board)
     }
 }
 
+void printModel(Model m)
+{
+    set<int> s;
+    for(int i = 0; i < m.points.size(); i++)
+    {
+        s.insert(m.points[i].x * 100 + m.points[i].y);
+    }
+    cout << "   ";
+    for(int i = -5; i <= 5; i++)    cout << setw(2) << i << " ";
+    cout << endl;
+    for(int i = -5; i <= 5; i++)
+    {
+        cout << setw(2) << i << " ";
+        for(int j = -5; j <= 5; j++)
+        {
+            if(s.count(i * 100 + j) == 1) cout << setw(2) << 1 << " ";
+            else cout << setw(2) << 0 << " ";
+        }
+        cout << endl;
+    }
+}
+
 Point rotateAndReversePoint(Point target, Point base, int type)
 {
     Point res = {target.x - base.x, target.y - base.y};
     int temp_x, temp_y;
-    switch (type % 4) {
-        case 0 : break;
-        case 1 : temp_x = res.x; temp_y = res.y;
-                 res.x = temp_y; res.y = -temp_x;
-                 break;
-        case 2 : temp_x = res.x; temp_y = res.y;
-                 res.x = -temp_x; res.y = -temp_y;
-                 break;
-        case 3 : temp_x = res.x; temp_y = res.y;
-                 res.x = -temp_y; res.y = temp_x;
-                 break;
+    switch (type % 4)
+    {
+    case 0 :
+        break;
+    case 1 :
+        temp_x = res.x;
+        temp_y = res.y;
+        res.x = temp_y;
+        res.y = -temp_x;
+        break;
+    case 2 :
+        temp_x = res.x;
+        temp_y = res.y;
+        res.x = -temp_x;
+        res.y = -temp_y;
+        break;
+    case 3 :
+        temp_x = res.x;
+        temp_y = res.y;
+        res.x = -temp_y;
+        res.y = temp_x;
+        break;
     }
+    if(type / 4 == 1)
+    {
+        res.x = -res.x;
+    }
+    return res;
 }
 
 Model rotateAndReverseModel(Model m, int type, int point_pos)
 {
-    Point p = m.points[point_pos];
-
+    Point base = m.points[point_pos];
+    vector<Point> ps;
+    Model res = {m.pos, ps};
+    for(int i = 0; i < m.points.size(); i++)
+    {
+        if(i == point_pos)
+        {
+            Point zero = {0, 0};
+            res.points.push_back(zero);
+            continue;
+        }
+        res.points.push_back(rotateAndReversePoint(m.points[i], base, type));
+    }
+    return res;
 }
 
 int main()
@@ -128,5 +180,8 @@ int main()
     vector<vector<int> > board = initBoard();
     vector<Model> models = initModels();
     printBoard(board);
+    printModel(models[0]);
+    Model test = rotateAndReverseModel(models[0], 5, 1);
+    printModel(test);
     return 0;
 }

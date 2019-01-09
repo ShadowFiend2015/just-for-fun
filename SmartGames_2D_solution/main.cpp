@@ -23,7 +23,7 @@ int models_array[12][5][2] =
     {{0, 0}, {0, 1}, {1, 0}}
 };
 string types[8] = {"0&no_reverse", "90&no_reverse", "180&no_reverse", "270&no_reverse",
-                   "0&reverse",    "90&reverse",    "180&reverse",    "270&reverse"}
+                   "0&reverse",    "90&reverse",    "180&reverse",    "270&reverse"};
 
 struct Point
 {
@@ -101,6 +101,20 @@ void printBoard(vector<vector<int> > board)
 
 Point rotateAndReversePoint(Point target, Point base, int type)
 {
+    Point res = {target.x - base.x, target.y - base.y};
+    int temp_x, temp_y;
+    switch (type % 4) {
+        case 0 : break;
+        case 1 : temp_x = res.x; temp_y = res.y;
+                 res.x = temp_y; res.y = -temp_x;
+                 break;
+        case 2 : temp_x = res.x; temp_y = res.y;
+                 res.x = -temp_x; res.y = -temp_y;
+                 break;
+        case 3 : temp_x = res.x; temp_y = res.y;
+                 res.x = -temp_y; res.y = temp_x;
+                 break;
+    }
 }
 
 Model rotateAndReverseModel(Model m, int type, int point_pos)

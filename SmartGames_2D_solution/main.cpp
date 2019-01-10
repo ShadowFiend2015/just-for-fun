@@ -175,6 +175,133 @@ Model rotateAndReverseModel(Model m, int type, int point_pos)
     return res;
 }
 
+int checkUsed(vector<int> used)
+{
+    int total = 0;
+    for(int i = 0; i < used.size(); i++)
+    {
+        total += used[i];
+    }
+    return total == 12;
+}
+
+// 确定该点为"角"，corner
+// 查看(x, y)上下左右4个点哪几个被占用。0 - 2/3个点被占用，可以使用。1 - 0/1/2个不相连的点被占用，不可使用。2 - 4个点都被占用，递归中应直接返回。
+int checkPoint(vector<vector<int> > board, int x, int y)
+{
+    // up - 1000, down - 100, left - 10, right - 1
+    int in_used = 0, pos = 0;
+    if(x == 0 || board[x-1][y] != 0)
+    {
+        pos += 1000;
+        in_used++;
+    }
+    if(x == board.size() - 1 || board[x+1][y] != 0)
+    {
+        pos += 100;
+        in_used++;
+    }
+    if(y == 0 || board[x][y-1] != 0)
+    {
+        pos += 10;
+        in_used++;
+    }
+    if(y == board[0].size() - 1 || board[x][y+1] != 0)
+    {
+        pos += 1;
+        in_used++;
+    }
+    if(in_used == 0 || in_used == 1) return 1;
+    if(in_used == 3) return 0;
+    if(in_used == 4) return 2;
+    if(pos == 1100 || pos == 11) return 1;
+    return 0;
+}
+
+// 0 - can use, 1 - can't use
+int checkModelInBoard(vector<vector<int> > board, Point p, Model m)
+{
+    for(int i = 0; i < m.points.size(); i++)
+    {
+        Point temp = {p.x + m.points[i].x, p.y + m.points[i].y};
+        if(temp.x < 0 || temp.x > board.size() || temp.y < 0 || temp.y > board[0].size() || board[temp.x][temp.y] != 0) return 1;
+    }
+    return 0;
+}
+
+vector<vector<int> > genModelInBoard(vector<vector<int> > board, Point p, Model m)
+{
+    for(int i = 0; i < m.points.size(); i++)
+    {
+        Point temp = {p.x + m.points[i].x, p.y + m.points[i].y};
+        board[temp.x][temp.y] = m.pos;
+    }
+    return board;
+}
+
+vector<int> genUsedModels(vector<int> used, int pos)
+{
+    used[pos] = 1;
+    return used;
+}
+
+void traverseBoard(const vector<Model>& models, vector<int> used, vector<vector<int> > board)
+{
+    if(checkUsed(used))
+    {
+        printBoard(board);
+        return;
+    }
+    Point cur_board;
+    for(int i = 0; i < board.size(); i++)
+    {
+        for(int j = 0; j < board[i].size(); j++)
+        {
+            if(board[i][j] != 0) continue;
+            int flag = checkPoint(board, i, j);
+            if(flag == 1) continue;
+            if(flag == 2) return;
+            cur_board = {i, j};
+            break;
+        }
+    }
+    for(int i = 0; i < used.size(); i++)
+    {
+        if(used[i] != 0) continue;
+        Model m = models[i];
+        for(int j = 0; j < m.points.size(); j++)
+        {
+            Point cur_model = m.points[j];
+            for(int t = 0; t < 8; t++)
+            {
+                Model temp = rotateAndReverseModel(m, t, j);
+                if(checkModelInBoard(board, cur_board, temp) == 0)
+                {
+                    traverseBoard(models, genUsedModels(used, i), genModelInBoard(board, cur_board, temp));
+                }
+            }
+        }
+    }
+}
+
+vector<vector<int> > initBoardFromFile(string filepath)
+{
+    fstream     f(filepath);
+    vector<string>  items;
+    string      line;
+    vector<vector<int> > board;
+    while(getline(f, line))
+    {
+        items = split(line);
+        if(items.size() != 11)  continue;
+        vector<int>
+        for(int i = 0; i < items.size(); i++)
+        {
+
+        }
+    }
+}
+
 int main()
 {
     vector<vector<int> > board = initBoard();

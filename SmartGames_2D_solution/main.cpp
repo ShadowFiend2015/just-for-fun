@@ -99,6 +99,7 @@ void printBoard(vector<vector<int> > board)
         }
         cout << endl;
     }
+    cout << endl;
 }
 
 void printModel(Model m)
@@ -121,6 +122,16 @@ void printModel(Model m)
         }
         cout << endl;
     }
+    cout << endl;
+}
+
+void printUsed(vector<int> used)
+{
+    for(int i = 0; i < used.size(); i++)
+    {
+        cout << setw(2) << used[i] << " ";
+    }
+    cout << endl << endl;
 }
 
 Point rotateAndReversePoint(Point target, Point base, int type)
@@ -284,6 +295,15 @@ void traverseBoard(const vector<Model>& models, vector<int> used, vector<vector<
     }
 }
 
+vector<string> split(string str) {
+    vector<string> res;
+    stringstream s(str);
+    string word;
+    while(s >> word)
+        res.push_back(word);
+    return res;
+}
+
 vector<vector<int> > initBoardFromFile(string filepath)
 {
     fstream     f(filepath);
@@ -294,21 +314,43 @@ vector<vector<int> > initBoardFromFile(string filepath)
     {
         items = split(line);
         if(items.size() != 11)  continue;
-        vector<int>
+        vector<int> temp;
         for(int i = 0; i < items.size(); i++)
         {
+            temp.push_back(atoi(items[i].c_str()));
+        }
+        board.push_back(temp);
+    }
+    return board;
+}
 
+vector<int> initUsedFromFile(string filepath)
+{
+    fstream     f(filepath);
+    vector<string>  items;
+    string      line;
+    vector<int> used;
+    while(getline(f, line))
+    {
+        items = split(line);
+        if(items.size() != 12)  continue;
+        for(int i = 0; i < items.size(); i++)
+        {
+            used.push_back(atoi(items[i].c_str()));
         }
     }
+    return used;
 }
 
 int main()
 {
-    vector<vector<int> > board = initBoard();
+    string board_filepath = "D:\\board.txt";
+    string used_filepath = "D:\\used.txt";
     vector<Model> models = initModels();
+    vector<vector<int> > board = initBoardFromFile(board_filepath);
+    vector<int> used = initUsedFromFile(used_filepath);
     printBoard(board);
-    printModel(models[0]);
-    Model test = rotateAndReverseModel(models[0], 5, 1);
-    printModel(test);
+    printUsed(used);
+    traverseBoard(models, used, board);
     return 0;
 }

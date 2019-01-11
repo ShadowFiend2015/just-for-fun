@@ -8,11 +8,12 @@
 
 using namespace std;
 
+// 12 models
 int models_array[12][5][2] =
 {
     {{0, 0}, {0, 1}, {0, 2}, {1, 2}, {1, 3}},
     {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}},
-    {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 3}},
+    {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 2}},
     {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {2, 0}},
     {{0, 0}, {0, 1}, {1, 1}, {1, 2}, {2, 1}},
     {{0, 0}, {0, 1}, {1, 1}, {1, 2}, {2, 2}},
@@ -23,6 +24,8 @@ int models_array[12][5][2] =
     {{0, 0}, {0, 1}, {0, 2}, {1, 0}},
     {{0, 0}, {0, 1}, {1, 0}}
 };
+
+// 8 types
 string types[8] = {"0&no_reverse", "90&no_reverse", "180&no_reverse", "270&no_reverse",
                    "0&reverse",    "90&reverse",    "180&reverse",    "270&reverse"
                   };
@@ -39,6 +42,7 @@ struct Model
     vector<Point> points;
 };
 
+// init board with 0
 vector<vector<int> > initBoard()
 {
     vector<vector<int> > board;
@@ -50,6 +54,7 @@ vector<vector<int> > initBoard()
     return board;
 }
 
+// init 12 models
 vector<Model> initModels()
 {
     vector<Model> models;
@@ -89,7 +94,7 @@ vector<Model> initModels()
     return models;
 }
 
-void printBoard(vector<vector<int> > board)
+void printBoard(const vector<vector<int> >& board)
 {
     for (int i = 0; i < board.size(); i++)
     {
@@ -102,7 +107,8 @@ void printBoard(vector<vector<int> > board)
     cout << endl;
 }
 
-void printModel(Model m)
+// print a model in [-5, 5] of (x, y)
+void printModel(const Model& m)
 {
     set<int> s;
     for(int i = 0; i < m.points.size(); i++)
@@ -125,7 +131,7 @@ void printModel(Model m)
     cout << endl;
 }
 
-void printUsed(vector<int> used)
+void printUsed(const vector<int>& used)
 {
     for(int i = 0; i < used.size(); i++)
     {
@@ -134,7 +140,8 @@ void printUsed(vector<int> used)
     cout << endl << endl;
 }
 
-Point rotateAndReversePoint(Point target, Point base, int type)
+// Point target rotated angle 90*(type%4), reverse(type/4), based on Point base
+Point rotateAndReversePoint(const Point& target, const Point& base, int type)
 {
     Point res = {target.x - base.x, target.y - base.y};
     int temp_x, temp_y;
@@ -168,7 +175,8 @@ Point rotateAndReversePoint(Point target, Point base, int type)
     return res;
 }
 
-Model rotateAndReverseModel(Model m, int type, int point_pos)
+// same as point, target: m, based on point m[point_pos]
+Model rotateAndReverseModel(const Model& m, int type, int point_pos)
 {
     Point base = m.points[point_pos];
     vector<Point> ps;
@@ -186,19 +194,20 @@ Model rotateAndReverseModel(Model m, int type, int point_pos)
     return res;
 }
 
-int checkUsed(vector<int> used)
+// count the number of used model
+int countUsed(const vector<int>& used)
 {
     int total = 0;
     for(int i = 0; i < used.size(); i++)
     {
         total += used[i];
     }
-    return total == 12;
+    return total;
 }
 
 // 确定该点为"角"，corner
-// 查看(x, y)上下左右4个点哪几个被占用。0 - 2/3个点被占用，可以使用。1 - 0/1/2个不相连的点被占用，不可使用。2 - 4个点都被占用，递归中应直接返回。
-int checkPoint(vector<vector<int> > board, int x, int y)
+// 查看(x, y)上下左右4个点哪几个被占用。0 - 2个点被占用，可以使用。1 - 3个点被占用，可以更好使用。 2 - 0/1/2个不相连的点被占用，不可使用。3 - 4个点都被占用，递归中应直接返回。
+int checkPoint(const vector<vector<int> >& board, int x, int y)
 {
     // up - 1000, down - 100, left - 10, right - 1
     int in_used = 0, pos = 0;
@@ -222,30 +231,59 @@ int checkPoint(vector<vector<int> > board, int x, int y)
         pos += 1;
         in_used++;
     }
-    if(in_used == 0 || in_used == 1) return 1;
-    if(in_used == 3) return 0;
-    if(in_used == 4) return 2;
-    if(pos == 1100 || pos == 11) return 1;
+    if(in_used == 0 || in_used == 1) return 2;
+    if(in_used == 3) return 1;
+    if(in_used == 4) return 3;
+    if(pos == 1100 || pos == 11) return 2;
     return 0;
 }
 
-// 0 - can use, 1 - can't use
-int checkModelInBoard(vector<vector<int> > board, Point p, Model m)
+// find best&first point in board, 3 > 2, 4 means GG，0/1 can't be used.
+Point bestPointInBoard(const vector<vector<int> >& board)
+{
+    Point best = {-1, -1};
+    int score = -1;
+    for(int i = 0; i < board.size(); i++)
+    {
+        for(int j = 0; j < board[i].size(); j++)
+        {
+            if(board[i][j] != 0) continue;
+            int flag = checkPoint(board, i, j);
+            if(flag < 2 && flag > score)
+            {
+                score = flag;
+                best = {i, j};
+                continue;
+            }
+            if(flag == 2) continue;
+            if(flag == 3)
+            {
+                best = {-1, -1};
+                return best;
+            }
+        }
+    }
+    return best;
+}
+
+// 0 - ok, 1 - bad
+int checkModelInBoard(const vector<vector<int> >& board, const Point& p, const Model& m)
 {
     for(int i = 0; i < m.points.size(); i++)
     {
         Point temp = {p.x + m.points[i].x, p.y + m.points[i].y};
-        if(temp.x < 0 || temp.x > board.size() || temp.y < 0 || temp.y > board[0].size() || board[temp.x][temp.y] != 0) return 1;
+        if(temp.x < 0 || temp.x >= board.size() || temp.y < 0 || temp.y >= board[0].size() || board[temp.x][temp.y] != 0) return 1;
     }
     return 0;
 }
 
-vector<vector<int> > genModelInBoard(vector<vector<int> > board, Point p, Model m)
+// return a new board added model m
+vector<vector<int> > genModelInBoard(vector<vector<int> > board, const Point& p, const Model& m)
 {
     for(int i = 0; i < m.points.size(); i++)
     {
         Point temp = {p.x + m.points[i].x, p.y + m.points[i].y};
-        board[temp.x][temp.y] = m.pos;
+        board[temp.x][temp.y] = m.pos + 1;
     }
     return board;
 }
@@ -256,26 +294,25 @@ vector<int> genUsedModels(vector<int> used, int pos)
     return used;
 }
 
-void traverseBoard(const vector<Model>& models, vector<int> used, vector<vector<int> > board)
+// traverse the board, main solution function, recursion
+void traverseBoard(const vector<Model>& models, vector<int> used, vector<vector<int> > board, int& is_break)
 {
-    if(checkUsed(used))
+    if(is_break) return;
+    if(countUsed(used) == 12)
     {
         printBoard(board);
+        is_break = 1;
         return;
     }
-    Point cur_board;
-    for(int i = 0; i < board.size(); i++)
+    /*
+    if(countUsed(used) > 5)
     {
-        for(int j = 0; j < board[i].size(); j++)
-        {
-            if(board[i][j] != 0) continue;
-            int flag = checkPoint(board, i, j);
-            if(flag == 1) continue;
-            if(flag == 2) return;
-            cur_board = {i, j};
-            break;
-        }
+        printBoard(board);
+        printUsed(used);
     }
+    */
+    Point cur_board = bestPointInBoard(board);
+    if(cur_board.x == -1) return;
     for(int i = 0; i < used.size(); i++)
     {
         if(used[i] != 0) continue;
@@ -288,13 +325,14 @@ void traverseBoard(const vector<Model>& models, vector<int> used, vector<vector<
                 Model temp = rotateAndReverseModel(m, t, j);
                 if(checkModelInBoard(board, cur_board, temp) == 0)
                 {
-                    traverseBoard(models, genUsedModels(used, i), genModelInBoard(board, cur_board, temp));
+                    traverseBoard(models, genUsedModels(used, i), genModelInBoard(board, cur_board, temp), is_break);
                 }
             }
         }
     }
 }
 
+// used in read_file function
 vector<string> split(string str) {
     vector<string> res;
     stringstream s(str);
@@ -346,11 +384,12 @@ int main()
 {
     string board_filepath = "D:\\board.txt";
     string used_filepath = "D:\\used.txt";
+    int is_break = 0;
     vector<Model> models = initModels();
     vector<vector<int> > board = initBoardFromFile(board_filepath);
     vector<int> used = initUsedFromFile(used_filepath);
     printBoard(board);
     printUsed(used);
-    traverseBoard(models, used, board);
+    traverseBoard(models, used, board, is_break);
     return 0;
 }
